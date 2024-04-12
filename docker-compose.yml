@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/app/Dockerfile
+    container_name: tgtime-router-checker
+    networks:
+      - tgtime-router-checker-network
+
+networks:
+  tgtime-router-checker-network:
+    driver: bridge
