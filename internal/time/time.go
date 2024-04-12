@@ -3,19 +3,20 @@ package time
 import (
 	"context"
 	"fmt"
+	"github.com/go-kit/kit/log"
 	pb "github.com/robertobadjio/tgtime-aggregator/api/v1/pb/aggregator"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"log"
-	"tgtime-router-checker/config"
+	"tgtime-router-tracker/config"
 )
 
 type TimeClient struct {
-	cfg *config.Config
+	cfg    *config.Config
+	logger log.Logger
 }
 
-func NewTimeClient(cfg config.Config) *TimeClient {
-	return &TimeClient{cfg: &cfg}
+func NewTimeClient(cfg config.Config, logger log.Logger) *TimeClient {
+	return &TimeClient{cfg: &cfg, logger: logger}
 }
 
 func (tc TimeClient) CreateTime(ctx context.Context, macAddress string, seconds, routerId int64) error {
@@ -37,7 +38,7 @@ func (tc TimeClient) CreateTime(ctx context.Context, macAddress string, seconds,
 		return fmt.Errorf("CreateTime: %v", err)
 	}
 
-	log.Printf("MacAddress: %s", response.MacAddress)
+	_ = tc.logger.Log("MacAddress: %s", response.MacAddress)
 
 	return nil
 }

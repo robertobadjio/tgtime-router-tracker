@@ -2,15 +2,16 @@ package background
 
 import (
 	"context"
+	"github.com/go-kit/kit/log"
 	"time"
 )
 
 type Background struct {
 	delay time.Duration
-	task  func(ctx context.Context)
+	task  func(ctx context.Context, logger log.Logger)
 }
 
-func NewBackground(delay time.Duration, task func(ctx context.Context)) *Background {
+func NewBackground(delay time.Duration, task func(ctx context.Context, logger log.Logger)) *Background {
 	return &Background{delay: delay, task: task}
 }
 
@@ -34,13 +35,13 @@ func NewBackground(delay time.Duration, task func(ctx context.Context)) *Backgro
 	return
 }*/
 
-func (b Background) Start(ctx context.Context) {
+func (b Background) Start(ctx context.Context, logger log.Logger) {
 	ticker := time.NewTicker(b.delay)
 
 	for {
 		select {
 		case <-ticker.C:
-			go b.task(ctx)
+			go b.task(ctx, logger)
 		}
 	}
 }

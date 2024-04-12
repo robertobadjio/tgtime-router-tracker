@@ -5,10 +5,10 @@ services:
     build:
       context: .
       dockerfile: ./docker/app/Dockerfile
-    container_name: tgtime-router-checker
+    container_name: tgtime-router-tracker
     networks:
-      - tgtime-router-checker-network
+      - tgtime-router-tracker-network
 
 networks:
-  tgtime-router-checker-network:
+  tgtime-router-tracker-network:
     driver: bridge
