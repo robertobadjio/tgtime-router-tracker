@@ -30,10 +30,10 @@ jobs:
                 echo ENV="dev" >> .env
 
             - name: Build containers
-              run: docker-compose -f docker-compose.yml build
+              run: docker compose -f docker-compose.yml build
 
             - name: Start containers
-              run: docker-compose -f docker-compose.yml up -d
+              run: docker compose -f docker-compose.yml up -d
 
             #- name: Health check
               #run: |
