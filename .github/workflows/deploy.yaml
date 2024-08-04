@@ -81,5 +81,5 @@ jobs:
 
         - name: Run container
           run: |
-            cd /opt/tgtime-router-tacker
+            cd /opt/tgtime-router-tracker
             docker-compose up --build --pull=always &
