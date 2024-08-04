@@ -1,4 +1,4 @@
-name: TgTime Router Tracker Deployy
+name: TgTime Router Tracker Deploy
 
 on:
     push:
