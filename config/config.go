@@ -2,7 +2,6 @@ package config
 
 import (
 	"github.com/joho/godotenv"
-	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -17,6 +16,8 @@ type Config struct {
 	TgTimeAggregatorHost string
 	TgTimeAggregatorPort string
 	DelaySeconds         time.Duration
+	KafkaHost            string
+	KafkaPort            string
 }
 
 const projectDirName = "tgtime-router-tracker"
@@ -43,7 +44,9 @@ func New() *Config {
 		RouterPassword:       getEnv("ROUTER_PASSWORD", ""),
 		TgTimeAggregatorHost: tgTimeAggregatorHost,
 		TgTimeAggregatorPort: tgTimeAggregatorPort,
-		DelaySeconds:         getTimeDurationSecondsEnv("DELAY_SECONDS", 30),
+		DelaySeconds:         getTimeDurationSecondsEnv("DELAY_SECONDS", 10),
+		KafkaHost:            getEnv("KAFKA_HOST", ""),
+		KafkaPort:            getEnv("KAFKA_PORT", ""),
 	}
 }
 
@@ -54,7 +57,7 @@ func loadEnv() {
 
 	err := godotenv.Load(string(rootPath) + `/.env`)
 	if err != nil {
-		log.Fatal("Problem loading .env file")
+		panic("Problem loading .env file")
 	}
 }
 

@@ -3,11 +3,16 @@ version: '3.8'
 services:
   app-router-tracker:
     build:
-      context: .
+      context: tgtime-router-tracker
       dockerfile: ./docker/app/Dockerfile
     container_name: tgtime-router-tracker
+    depends_on:
+      tgtime-aggregator:
+        condition: service_healthy
     networks:
       - tgtime-router-tracker-network
+      - kafka-network
+      - test-network
 
 networks:
   tgtime-router-tracker-network:

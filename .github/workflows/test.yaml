@@ -1,0 +1,44 @@
+name: TgTime Router Tracker Test
+
+on:
+    push:
+        branches:
+            - master
+    pull_request:
+        branches:
+            - master
+
+jobs:
+    test:
+        strategy:
+            matrix:
+                go-version: [1.22.x]
+                os: [ubuntu-latest]
+        runs-on: ${{ matrix.os }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v3
+
+            - name: Set up Go
+              uses: actions/setup-go@v4
+              with:
+                go-version: ${{ matrix.go-version }}
+
+            - name: Add config
+              run: |
+                touch ./.env
+                echo ENV="dev" >> .env
+
+            - name: Build containers
+              run: docker-compose -f docker-compose.yml -f docker-compose.dev.yml build
+
+            - name: Start containers
+              run: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+            #- name: Health check
+              #run: |
+                #docker run --network container:tgtime-notifier-ap appropriate/curl -s --retry 10 --retry-connrefused --retry-delay 5 --retry-max-time 30 http://localhost:8080/ping
+
+            - name: Stop containers
+              if: always()
+              run: docker-compose -f docker-compose.yml -f docker-compose.dev.yml down

@@ -1,0 +1,38 @@
+name: TgTime Router Tracker Audit
+
+on:
+    push:
+        branches:
+            - master
+    pull_request:
+        branches:
+            - master
+
+jobs:
+    audit:
+        strategy:
+            matrix:
+                go-version: [1.21.x, 1.22.x]
+                os: [ubuntu-latest]
+        runs-on: ${{ matrix.os }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v3
+
+            - name: Set up Go
+              uses: actions/setup-go@v4
+              with:
+                go-version: ${{ matrix.go-version }}
+
+            - name: Add config
+              run: |
+                
+
+            - name: Verify dependencies
+              run: go mod verify
+
+            - name: Build
+              run: go build -v ./...
+
+            - name: Run go vet
+              run: go vet ./...

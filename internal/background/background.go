@@ -15,26 +15,6 @@ func NewBackground(delay time.Duration, task func(ctx context.Context, logger lo
 	return &Background{delay: delay, task: task}
 }
 
-/*func (b Background) Start() {
-	ticker := time.NewTicker(b.delay)
-	stop := make(chan struct{})
-
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				b.task()
-			case <-stop:
-				fmt.Println("Stopping Background")
-				ticker.Stop()
-				return
-			}
-		}
-	}()
-
-	return
-}*/
-
 func (b Background) Start(ctx context.Context, logger log.Logger) {
 	ticker := time.NewTicker(b.delay)
 
