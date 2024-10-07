@@ -13,16 +13,16 @@ import (
 	"time"
 )
 
-type TimeClient struct {
+type AggregatorClient struct {
 	cfg    *config.Config
 	logger log.Logger
 }
 
-func NewTimeClient(cfg config.Config, logger log.Logger) *TimeClient {
-	return &TimeClient{cfg: &cfg, logger: logger}
+func NewTimeClient(cfg config.Config, logger log.Logger) *AggregatorClient {
+	return &AggregatorClient{cfg: &cfg, logger: logger}
 }
 
-func (tc TimeClient) CreateTime(ctx context.Context, macAddress string, seconds, routerId int64) error {
+func (tc AggregatorClient) CreateTime(ctx context.Context, macAddress string, seconds, routerId int64) error {
 	client, err := grpc.NewClient(
 		tc.buildAddress(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -39,7 +39,7 @@ func (tc TimeClient) CreateTime(ctx context.Context, macAddress string, seconds,
 	ctxTemp, cancel := context.WithTimeout(ctx, 120*time.Second)
 	defer cancel()
 
-	response, err := timeAggregatorClient.CreateTime(
+	_, err = timeAggregatorClient.CreateTime(
 		ctxTemp,
 		&pb.CreateTimeRequest{MacAddress: macAddress, Seconds: seconds, RouterId: routerId},
 	)
@@ -58,15 +58,9 @@ func (tc TimeClient) CreateTime(ctx context.Context, macAddress string, seconds,
 		}
 	}
 
-	//if err != nil {
-	//	return fmt.Errorf("CreateTime: %v", err)
-	//}
-
-	_ = tc.logger.Log("MacAddress", response.MacAddress)
-
 	return nil
 }
 
-func (tc TimeClient) buildAddress() string {
+func (tc AggregatorClient) buildAddress() string {
 	return fmt.Sprintf("%s:%s", tc.cfg.TgTimeAggregatorHost, tc.cfg.TgTimeAggregatorPort)
 }

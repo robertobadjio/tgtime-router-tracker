@@ -45,11 +45,10 @@ func main() {
 }
 
 func buildTrackerTaskFunc(
-	timeClient *timeService.TimeClient,
+	timeClient *timeService.AggregatorClient,
 	routerTracker *tracker.Tracker,
 ) func(ctx context.Context, logger log.Logger) {
 	return func(ctx context.Context, logger log.Logger) {
-		_ = logger.Log("msg", "Starting router tracker task...")
 		macAddresses, err := routerTracker.GetMacAddresses(ctx)
 		if err != nil {
 			_ = logger.Log("msg", err.Error())
