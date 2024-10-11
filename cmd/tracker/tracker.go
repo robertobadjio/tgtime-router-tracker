@@ -19,8 +19,8 @@ func main() {
 	cfg := config.New()
 
 	var logger log.Logger
-
 	logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+	logger = log.With(logger, "ts", log.DefaultTimestampUTC)
 
 	routerTracker := tracker.NewRouterTracker(
 		cfg.RouterHost,
@@ -65,7 +65,6 @@ func buildTrackerTaskFunc(
 		// TODO: Цикл по роутерам
 		// TODO: Сохранять в БД и публиковать в Kafka бачами
 		for _, macAddress := range macAddresses {
-
 			// TODO: Пока роутер один
 			// Если будет n роутеров, нужно ходить по каждому из них и забирать Mac-адреса активных устройств
 			err = timeClient.CreateTime(ctx, macAddress, currentDateTime, 1)

@@ -48,7 +48,7 @@ func (tc AggregatorClient) CreateTime(ctx context.Context, macAddress string, se
 		if status, ok := status.FromError(err); ok {
 			// Handle the error based on its status code
 			if status.Code() == codes.NotFound {
-				return fmt.Errorf("Requested resource not found")
+				return fmt.Errorf("requested resource not found")
 			} else {
 				return fmt.Errorf("RPC error: %v, %v", status.Message(), ctxTemp.Err())
 			}

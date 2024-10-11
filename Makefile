@@ -2,7 +2,7 @@
 .DEFAULT_GOAL := help
 .PHONY: help
 
-DOCKER_COMPOSE ?= docker-compose -f docker-compose.yml
+DOCKER_COMPOSE ?= docker compose -f docker-compose.yml
 
 include .env
 ENV ?= dev
