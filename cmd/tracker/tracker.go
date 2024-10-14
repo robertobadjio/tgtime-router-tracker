@@ -82,6 +82,7 @@ func buildTrackerTaskFunc(
 				checks[dateNow] = make(map[string]struct{})
 			}
 
+			fmt.Println("IF", checks, dateNow, macAddress)
 			_, ok = checks[dateNow][macAddress]
 			if !ok {
 				fmt.Println("PRODUCE", macAddress)
@@ -91,7 +92,7 @@ func buildTrackerTaskFunc(
 				}
 				checks[dateNow][macAddress] = struct{}{}
 			}
-			fmt.Println("PRODUCE", checks)
+			fmt.Println("CHECKS", checks)
 		}
 	}
 }
