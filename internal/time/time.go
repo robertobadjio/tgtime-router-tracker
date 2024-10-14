@@ -22,18 +22,19 @@ func NewTimeClient(cfg config.Config, logger log.Logger) *AggregatorClient {
 	return &AggregatorClient{cfg: &cfg, logger: logger}
 }
 
-func (tc AggregatorClient) CreateTime(ctx context.Context, macAddress string, seconds, routerId int64) error {
+func (tc AggregatorClient) CreateTime(
+	ctx context.Context,
+	macAddress string,
+	seconds, routerId int64,
+) error {
 	client, err := grpc.NewClient(
 		tc.buildAddress(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		//grpc.WithReturnConnectionError(),
-		//grpc.WithKeepaliveParams(keepAlive),
-		//grpc.WithBlock(),
 	)
 	if err != nil {
 		return fmt.Errorf("could not connect: %v", err)
 	}
-	defer func() { _ = client.Close() }() // Игнорируем ошибку в явном виде
+	defer func() { _ = client.Close() }()
 
 	timeAggregatorClient := pb.NewAggregatorClient(client)
 	ctxTemp, cancel := context.WithTimeout(ctx, 120*time.Second)
@@ -45,12 +46,12 @@ func (tc AggregatorClient) CreateTime(ctx context.Context, macAddress string, se
 	)
 
 	if err != nil {
-		if status, ok := status.FromError(err); ok {
+		if s, ok := status.FromError(err); ok {
 			// Handle the error based on its status code
-			if status.Code() == codes.NotFound {
+			if s.Code() == codes.NotFound {
 				return fmt.Errorf("requested resource not found")
 			} else {
-				return fmt.Errorf("RPC error: %v, %v", status.Message(), ctxTemp.Err())
+				return fmt.Errorf("RPC error: %v, %v", s.Message(), ctxTemp.Err())
 			}
 		} else {
 			// Handle non-RPC errors

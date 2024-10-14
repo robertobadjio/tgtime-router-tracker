@@ -74,18 +74,19 @@ func buildTrackerTaskFunc(
 			}
 
 			// TODO: Писать в Redis
-			_, ok := checks[time.Now().Format("2006-01-02")]
+			dateNow := time.Now().Format("2006-01-02")
+			_, ok := checks[dateNow]
 			if !ok {
-				checks[time.Now().Format("2006-01-02")] = make(map[string]struct{})
+				checks[dateNow] = make(map[string]struct{})
 			}
 
-			_, ok = checks[time.Now().Format("2006-01-02")][macAddress]
+			_, ok = checks[dateNow][macAddress]
 			if !ok {
 				err = kafka.Produce(ctx, kafkaModule.InOfficeMessage{MacAddress: macAddress}, kafkaModule.InOfficeTopic)
 				if err != nil {
 					_ = logger.Log("kafka", "produce in office message", "msg", err.Error())
 				}
-				checks[time.Now().Format("2006-01-02")][macAddress] = struct{}{}
+				checks[dateNow][macAddress] = struct{}{}
 			}
 		}
 	}

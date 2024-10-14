@@ -4,15 +4,6 @@
 
 DOCKER_COMPOSE ?= docker compose -f docker-compose.yml
 
-include .env
-ENV ?= dev
-
-#ifdef ENV
-#ifneq "$(ENV)" ""
-#	DOCKER_COMPOSE := $(DOCKER_COMPOSE) -f docker-compose.$(ENV).yml
-#endif
-#endif
-
 export GOOS=linux
 export GOARCH=amd64
 
@@ -24,7 +15,7 @@ fmt: ## Automatically format source code
 .PHONY:fmt
 
 lint: fmt ## Check code (lint)
-	golint ./...
+	golangci-lint run ./... --config .golangci.pipeline.yaml
 .PHONY:lint
 
 vet: fmt ## Check code (vet)
