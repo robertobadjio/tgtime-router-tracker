@@ -17,7 +17,6 @@ func NewKafka(address string) *Kafka {
 }
 
 func (k Kafka) ProduceInOffice(ctx context.Context, macAddress string) error {
-	m := InOfficeMessage{MacAddress: macAddress}
 	conn, err := kafka.DialLeader(
 		ctx,
 		"tcp",
@@ -35,7 +34,7 @@ func (k Kafka) ProduceInOffice(ctx context.Context, macAddress string) error {
 	}
 
 	_, err = conn.WriteMessages(
-		kafka.Message{Value: []byte(m.MacAddress)},
+		kafka.Message{Value: []byte(macAddress)},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to write messages: %w", err)

@@ -71,10 +71,9 @@ func buildTrackerTaskFunc(
 			err = timeClient.CreateTime(ctx, macAddress, currentDateTime, 1)
 			if err != nil {
 				_ = logger.Log("msg", err.Error())
-				return
 			}
 
-			// TODO: Писать в Redis
+			// TODO: Писать в Redis?
 			dateNow := time.Now().Format("2006-01-02")
 			_, ok := checks[dateNow]
 			if !ok {
