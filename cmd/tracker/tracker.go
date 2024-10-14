@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -66,6 +67,7 @@ func buildTrackerTaskFunc(
 		// TODO: Цикл по роутерам
 		// TODO: Сохранять в БД и публиковать в Kafka бачами
 		for _, macAddress := range macAddresses {
+			fmt.Println("CYCLE", macAddress)
 			// TODO: Пока роутер один
 			// Если будет n роутеров, нужно ходить по каждому из них и забирать Mac-адреса активных устройств
 			err = timeClient.CreateTime(ctx, macAddress, currentDateTime, 1)
@@ -82,12 +84,14 @@ func buildTrackerTaskFunc(
 
 			_, ok = checks[dateNow][macAddress]
 			if !ok {
+				fmt.Println("PRODUCE", macAddress)
 				err = kafka.ProduceInOffice(ctx, macAddress)
 				if err != nil {
 					_ = logger.Log("kafka", "produce in office message", "msg", err.Error())
 				}
 				checks[dateNow][macAddress] = struct{}{}
 			}
+			fmt.Println("PRODUCE", checks)
 		}
 	}
 }
