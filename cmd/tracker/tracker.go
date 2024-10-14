@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-kit/kit/log"
 	"os"
 	"tgtime-router-tracker/config"
@@ -82,6 +83,8 @@ func buildTrackerTaskFunc(
 
 			_, ok = checks[dateNow][macAddress]
 			if !ok {
+				fmt.Println("DEBUG")
+				fmt.Println(dateNow, macAddress)
 				err = kafka.Produce(ctx, kafkaModule.InOfficeMessage{MacAddress: macAddress}, kafkaModule.InOfficeTopic)
 				if err != nil {
 					_ = logger.Log("kafka", "produce in office message", "msg", err.Error())
