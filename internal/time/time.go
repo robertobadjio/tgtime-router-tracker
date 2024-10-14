@@ -3,14 +3,16 @@ package time
 import (
 	"context"
 	"fmt"
-	"github.com/go-kit/kit/log"
-	pb "github.com/robertobadjio/tgtime-aggregator/api/v1/pb/aggregator"
+	"time"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
-	"tgtime-router-tracker/config"
-	"time"
+
+	"github.com/go-kit/kit/log"
+	pb "github.com/robertobadjio/tgtime-aggregator/api/v1/pb/aggregator"
+	"github.com/robertobadjio/tgtime-router-tracker/config"
 )
 
 type AggregatorClient struct {
@@ -25,7 +27,7 @@ func NewTimeClient(cfg config.Config, logger log.Logger) *AggregatorClient {
 func (tc AggregatorClient) CreateTime(
 	ctx context.Context,
 	macAddress string,
-	seconds, routerId int64,
+	seconds, routerID int64,
 ) error {
 	client, err := grpc.NewClient(
 		tc.buildAddress(),
@@ -42,7 +44,7 @@ func (tc AggregatorClient) CreateTime(
 
 	_, err = timeAggregatorClient.CreateTime(
 		ctxTemp,
-		&pb.CreateTimeRequest{MacAddress: macAddress, Seconds: seconds, RouterId: routerId},
+		&pb.CreateTimeRequest{MacAddress: macAddress, Seconds: seconds, RouterId: routerID},
 	)
 
 	if err != nil {

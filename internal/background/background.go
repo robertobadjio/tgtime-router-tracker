@@ -2,8 +2,9 @@ package background
 
 import (
 	"context"
-	"github.com/go-kit/kit/log"
 	"time"
+
+	"github.com/go-kit/kit/log"
 )
 
 type Background struct {

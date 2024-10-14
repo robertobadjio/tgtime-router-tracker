@@ -2,6 +2,9 @@ package kafka
 
 import (
 	"context"
+	"fmt"
+	"time"
+
 	"github.com/segmentio/kafka-go"
 )
 
@@ -13,32 +16,33 @@ func NewKafka(address string) *Kafka {
 	return &Kafka{address: address}
 }
 
-func (k Kafka) Produce(ctx context.Context, m InOfficeMessage, topic string) error {
+func (k Kafka) ProduceInOffice(ctx context.Context, macAddress string) error {
+	m := InOfficeMessage{MacAddress: macAddress}
 	conn, err := kafka.DialLeader(
 		ctx,
 		"tcp",
 		k.address,
-		topic,
+		inOfficeTopic,
 		partition,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to dial leader: %w", err)
 	}
 
-	/*err = conn.SetWriteDeadline(time.Now().Add(1 * time.Second))
+	err = conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 	if err != nil {
-		return err
-	}*/
+		return fmt.Errorf("failed to set deadline: %w", err)
+	}
 
 	_, err = conn.WriteMessages(
 		kafka.Message{Value: []byte(m.MacAddress)},
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to write messages: %w", err)
 	}
 
 	if err = conn.Close(); err != nil {
-		return err
+		return fmt.Errorf("failed to close writer: %w", err)
 	}
 
 	return nil

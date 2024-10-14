@@ -4,8 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"gopkg.in/routeros.v2"
 	"log"
+
+	"gopkg.in/routeros.v2"
 )
 
 type Tracker struct {

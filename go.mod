@@ -1,4 +1,4 @@
-module tgtime-router-tracker
+module github.com/robertobadjio/tgtime-router-tracker
 
 go 1.23
 

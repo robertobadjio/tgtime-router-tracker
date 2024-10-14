@@ -2,15 +2,15 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"github.com/go-kit/kit/log"
 	"os"
-	"tgtime-router-tracker/config"
-	"tgtime-router-tracker/internal/background"
-	kafkaModule "tgtime-router-tracker/internal/kafka"
-	timeService "tgtime-router-tracker/internal/time"
-	"tgtime-router-tracker/internal/tracker"
 	"time"
+
+	"github.com/go-kit/kit/log"
+	"github.com/robertobadjio/tgtime-router-tracker/config"
+	"github.com/robertobadjio/tgtime-router-tracker/internal/background"
+	kafkaModule "github.com/robertobadjio/tgtime-router-tracker/internal/kafka"
+	timeService "github.com/robertobadjio/tgtime-router-tracker/internal/time"
+	"github.com/robertobadjio/tgtime-router-tracker/internal/tracker"
 )
 
 var quit = make(chan struct{})
@@ -83,9 +83,7 @@ func buildTrackerTaskFunc(
 
 			_, ok = checks[dateNow][macAddress]
 			if !ok {
-				fmt.Println("DEBUG")
-				fmt.Println(dateNow, macAddress)
-				err = kafka.Produce(ctx, kafkaModule.InOfficeMessage{MacAddress: macAddress}, kafkaModule.InOfficeTopic)
+				err = kafka.ProduceInOffice(ctx, macAddress)
 				if err != nil {
 					_ = logger.Log("kafka", "produce in office message", "msg", err.Error())
 				}
