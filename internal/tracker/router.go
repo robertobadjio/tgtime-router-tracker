@@ -9,6 +9,7 @@ import (
 	"gopkg.in/routeros.v2"
 )
 
+// Tracker Трекер роутера
 type Tracker struct {
 	host       string
 	port       string
@@ -17,6 +18,7 @@ type Tracker struct {
 	properties string
 }
 
+// NewRouterTracker Конструктор трекер роутера
 func NewRouterTracker(host, port, login, password string) *Tracker {
 	properties := flag.String("properties", "mac-address", "Properties")
 
@@ -29,6 +31,7 @@ func NewRouterTracker(host, port, login, password string) *Tracker {
 	}
 }
 
+// GetMacAddresses Получение списка mac-адресов подключенных к роутеру
 func (r Tracker) GetMacAddresses(_ context.Context) ([]string, error) {
 	var macAddresses []string
 	flag.Parse()

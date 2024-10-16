@@ -9,6 +9,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// Config Конфиг приложения
 type Config struct {
 	RouterHost           string
 	RouterPort           string
@@ -27,6 +28,7 @@ func init() {
 	loadEnv()
 }
 
+// New Конструктор конфига приложения
 func New() *Config {
 	tgTimeAggregatorHost := getEnv("TGTIME_AGGREGATOR_SERVICE_HOST", "")
 	if tgTimeAggregatorHost == "" {

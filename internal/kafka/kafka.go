@@ -8,14 +8,17 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+// Kafka Клиент для кафки
 type Kafka struct {
 	address string
 }
 
+// NewKafka Конструктор клиента
 func NewKafka(address string) *Kafka {
 	return &Kafka{address: address}
 }
 
+// ProduceInOffice Отправка сообщения о приходе сотрудника в офис / на работу
 func (k Kafka) ProduceInOffice(ctx context.Context, macAddress string) error {
 	conn, err := kafka.DialLeader(
 		ctx,

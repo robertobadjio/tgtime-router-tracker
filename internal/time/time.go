@@ -3,7 +3,6 @@ package time
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -11,19 +10,22 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/go-kit/kit/log"
-	pb "github.com/robertobadjio/tgtime-aggregator/api/v1/pb/aggregator"
+	pb "github.com/robertobadjio/tgtime-aggregator/pkg/api/time_v1"
 	"github.com/robertobadjio/tgtime-router-tracker/config"
 )
 
+// AggregatorClient Клиент gRPC-сервиса для сохранения времени
 type AggregatorClient struct {
 	cfg    *config.Config
 	logger log.Logger
 }
 
+// NewTimeClient Конструктор gRPC-сервиса для сохранения времени
 func NewTimeClient(cfg config.Config, logger log.Logger) *AggregatorClient {
 	return &AggregatorClient{cfg: &cfg, logger: logger}
 }
 
+// CreateTime Сохранить времени "online" mac-адреса
 func (tc AggregatorClient) CreateTime(
 	ctx context.Context,
 	macAddress string,
@@ -38,13 +40,11 @@ func (tc AggregatorClient) CreateTime(
 	}
 	defer func() { _ = client.Close() }()
 
-	timeAggregatorClient := pb.NewAggregatorClient(client)
-	ctxTemp, cancel := context.WithTimeout(ctx, 120*time.Second)
-	defer cancel()
+	timeAggregatorClient := pb.NewTimeV1Client(client)
 
-	_, err = timeAggregatorClient.CreateTime(
-		ctxTemp,
-		&pb.CreateTimeRequest{MacAddress: macAddress, Seconds: seconds, RouterId: routerID},
+	_, err = timeAggregatorClient.Create(
+		ctx,
+		&pb.CreateRequest{MacAddress: macAddress, Seconds: seconds, RouterId: routerID},
 	)
 
 	if err != nil {
@@ -52,13 +52,12 @@ func (tc AggregatorClient) CreateTime(
 			// Handle the error based on its status code
 			if s.Code() == codes.NotFound {
 				return fmt.Errorf("requested resource not found")
-			} else {
-				return fmt.Errorf("RPC error: %v, %v", s.Message(), ctxTemp.Err())
 			}
-		} else {
-			// Handle non-RPC errors
-			return fmt.Errorf("Non-RPC error: %v", err)
+
+			return fmt.Errorf("RPC error: %v", s.Message())
 		}
+
+		return fmt.Errorf("Non-RPC error: %v", err)
 	}
 
 	return nil
