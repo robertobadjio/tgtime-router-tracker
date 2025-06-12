@@ -1,4 +1,4 @@
-package time
+package aggregator
 
 import (
 	"context"
@@ -9,34 +9,31 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
-	"github.com/go-kit/kit/log"
 	pb "github.com/robertobadjio/tgtime-aggregator/pkg/api/time_v1"
-	"github.com/robertobadjio/tgtime-router-tracker/config"
 )
 
-// AggregatorClient Клиент gRPC-сервиса для сохранения времени
-type AggregatorClient struct {
-	cfg    *config.Config
-	logger log.Logger
+// Aggregator Клиент gRPC-сервиса для сохранения времени.
+type Aggregator struct {
+	address string
 }
 
-// NewTimeClient Конструктор gRPC-сервиса для сохранения времени
-func NewTimeClient(cfg config.Config, logger log.Logger) *AggregatorClient {
-	return &AggregatorClient{cfg: &cfg, logger: logger}
+// NewAggregatorClient Конструктор gRPC-сервиса для сохранения времени.
+func NewAggregatorClient(address string) *Aggregator {
+	return &Aggregator{address: address}
 }
 
-// CreateTime Сохранить времени "online" mac-адреса
-func (tc AggregatorClient) CreateTime(
+// CreateTime Сохранить времени "online" mac-адреса.
+func (tc Aggregator) CreateTime(
 	ctx context.Context,
 	macAddress string,
 	seconds, routerID int64,
 ) error {
 	client, err := grpc.NewClient(
-		tc.buildAddress(),
+		tc.address,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		return fmt.Errorf("could not connect: %v", err)
+		return fmt.Errorf("could not connect: %w", err)
 	}
 	defer func() { _ = client.Close() }()
 
@@ -61,8 +58,4 @@ func (tc AggregatorClient) CreateTime(
 	}
 
 	return nil
-}
-
-func (tc AggregatorClient) buildAddress() string {
-	return fmt.Sprintf("%s:%s", tc.cfg.TgTimeAggregatorHost, tc.cfg.TgTimeAggregatorPort)
 }

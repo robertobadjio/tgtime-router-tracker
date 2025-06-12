@@ -1,12 +1,93 @@
 services:
   app-router-tracker:
+    env_file:
+      - .env
     build:
       context: .
       dockerfile: ./docker/app/Dockerfile
-    container_name: tgtime-router-tracker
+    #container_name: tgtime-router-tracker
     networks:
       - tgtime-router-tracker-network
+    depends_on:
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+  routeros:
+    image: mkv28/mikrotik-routeros:latest
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+      #- /dev/kvm
+    ports:
+      - "2222:22"
+      - "2223:23"
+      - "7777:80"
+      - "8728:8728"
+      - "8729:8729"
+      - "28728:8728"
+      - "28729:8729"
+      - "8291:8291"
+      - "5900:5900"
+  db:
+    image: postgres:16.2
+    ports:
+      - "${DATABASE_PORT:-5432}:5432"
+    volumes:
+      - tgtime-router-tracker-data:/var/lib/postgresql/data
+      - ./docker/db/docker-entrypoint-initdb.d/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    networks:
+      - tgtime-router-tracker-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 1s
+  migrate:
+    image: migrate/migrate
+    networks:
+      - tgtime-router-tracker-network
+    volumes:
+      - ./db/migrations:/migrations
+    command: ["-path", "/migrations", "-database", "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@db:${DATABASE_PORT}/${DATABASE_NAME}?sslmode=${DATABASE_SSL_MODE}", "up"]
+    links:
+      - db
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.9.0
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+    networks:
+      - tgtime-router-tracker-network
+  kafka:
+    image: confluentinc/cp-kafka:7.9.0
+    #container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_LOG_RETENTION_MS=10000
+      - KAFKA_CLEANUP_POLICY=delete
+      - KAFKA_CLEANUP_ENABLE=true
+      - KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS=5000
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+    networks:
+      - tgtime-router-tracker-network
+    healthcheck:
+      test: nc -z localhost 9092 || exit -1
+      interval: 5s
+      timeout: 10s
+      retries: 10
 
 networks:
   tgtime-router-tracker-network:
     driver: bridge
+
+volumes:
+  tgtime-router-tracker-data:

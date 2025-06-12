@@ -1,4 +1,4 @@
-FROM golang:1.23 AS build
+FROM golang:1.24.2 AS build
 
 WORKDIR /app
 
@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY ../../cmd/tracker/tracker.go ./
 COPY ../../internal internal
-COPY ../../config config
+COPY ../../internal/config config
 COPY ../../.env /
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /tgtime-router-tracker

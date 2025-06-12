@@ -13,12 +13,12 @@ type Kafka struct {
 	address string
 }
 
-// NewKafka Конструктор клиента
-func NewKafka(address string) *Kafka {
-	return &Kafka{address: address}
+// NewKafka Конструктор клиента.
+func NewKafka(address string) (*Kafka, error) {
+	return &Kafka{address: address}, nil
 }
 
-// ProduceInOffice Отправка сообщения о приходе сотрудника в офис / на работу
+// ProduceInOffice Отправка сообщения о приходе сотрудника в офис / на работу.
 func (k Kafka) ProduceInOffice(ctx context.Context, macAddress string) error {
 	conn, err := kafka.DialLeader(
 		ctx,

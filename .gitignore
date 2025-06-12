@@ -1,2 +1,7 @@
 .idea
 .env
+
+bin/*
+!bin/.gitkeep
+
+tgtime-router-tracker

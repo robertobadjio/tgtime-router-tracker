@@ -1,0 +1,3 @@
+CREATE USER tgtime_router_tracker_user WITH PASSWORD 'tgtime_router_tracker_password';
+CREATE DATABASE tgtime_router_tracker;
+GRANT ALL PRIVILEGES ON DATABASE tgtime_router_tracker TO tgtime_router_tracker_user;
