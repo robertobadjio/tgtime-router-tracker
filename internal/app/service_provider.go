@@ -17,9 +17,9 @@ import (
 	"github.com/robertobadjio/tgtime-router-tracker/internal/config"
 	"github.com/robertobadjio/tgtime-router-tracker/internal/logger"
 	routerRepo "github.com/robertobadjio/tgtime-router-tracker/internal/repository/router"
-	"github.com/robertobadjio/tgtime-router-tracker/internal/service/aggregator"
 	"github.com/robertobadjio/tgtime-router-tracker/internal/service/kafka"
-	"github.com/robertobadjio/tgtime-router-tracker/internal/service/router"
+	"github.com/robertobadjio/tgtime-router-tracker/internal/service/router_tracker"
+	"github.com/robertobadjio/tgtime-router-tracker/internal/service/time_aggregator"
 	"github.com/robertobadjio/tgtime-router-tracker/internal/service/tracker"
 )
 
@@ -101,7 +101,7 @@ func (sp *serviceProvider) Tracker(ctx context.Context) *tracker.Tracker {
 			routerOSClients = append(routerOSClients, routerOSClient)
 		}
 
-		routerService, errNewRouterTracker := router.NewRouterTracker(
+		routerService, errNewRouterTracker := router_tracker.NewRouterTracker(
 			routerTrackerConfig.RegistrationTableSentence(),
 			routerOSClients,
 		)
@@ -179,7 +179,7 @@ func (sp *serviceProvider) Tracker(ctx context.Context) *tracker.Tracker {
 		closer.Add(func() error { return client.Close() })
 
 		timeAggregatorClient := pb.NewTimeV1Client(client)
-		ta, errNewTimeAggregator := aggregator.NewTimeAggregator(timeAggregatorClient)
+		ta, errNewTimeAggregator := time_aggregator.NewTimeAggregator(timeAggregatorClient)
 		if errNewTimeAggregator != nil {
 			logger.Fatal(
 				"component", "di",

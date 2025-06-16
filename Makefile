@@ -12,9 +12,9 @@ help: ## Help
 
 install-deps-mac: ## Install dependencies for MAC
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s v1.64.5
-	wget -qO- https://github.com/gojuno/minimock/releases/download/v3.4.5/minimock_3.4.5_darwin_amd64.tar.gz | gunzip | tar xvf - -C $(BIN_DIR) minimock
 
 install-go-deps:
+	go install gotest.tools/gotestsum@latest
 	go install go.uber.org/mock/mockgen@latest
 
 fmt: ## Automatically format source code
@@ -50,15 +50,19 @@ clean: ## Delete all containers
 
 mockgen: ## Run mockgen
 	mockgen -source=./internal/config/os.go -destination=./internal/config/os_mock.go -package=config
-	mockgen -source=./internal/service/aggregator/aggregator.go -destination=./internal/service/aggregator/aggregator_mock.go -package=aggregator
+	mockgen -source=./internal/service/time_aggregator/time_aggregator.go -destination=./internal/service/time_aggregator/time_aggregator_mock.go -package=time_aggregator
 	mockgen -source=./internal/service/kafka/kafka.go -destination=./internal/service/kafka/kafka_mock.go -package=kafka
 	mockgen -source=./internal/service/tracker/tracker.go -destination=./internal/service/tracker/tracker_mock.go -package=tracker
+	mockgen -source=./internal/routeros/routeros.go -destination=./internal/service/router_tracker/routeros_mock.go -package=router_tracker
 
 test-unit: ## Run unit tests
 	$(GO_TEST_COMMAND) \
 		./internal/... \
 		-count=1 \
 		-cover -coverprofile=$(TEST_COVER_FILENAME)
+
+test-unit-gotestsum: ## Run unit tests with gotestsum tool
+	gotestsum --junitfile report.xml --format testname -- --coverprofile c.out ./internal/... -covermode atomic -race
 
 test-unit-race: ## Run unit tests with -race flag
 	$(GO_TEST_COMMAND) ./internal/... -count=1 -race

@@ -5,3 +5,6 @@ bin/*
 !bin/.gitkeep
 
 tgtime-router-tracker
+
+c.out
+report.xml

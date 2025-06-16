@@ -1,4 +1,4 @@
-package aggregator
+package time_aggregator
 
 import (
 	"context"

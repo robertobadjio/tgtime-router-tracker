@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/docker/api/types/container"
-	"github.com/robertobadjio/tgtime-router-tracker/internal/service/router"
+	"github.com/robertobadjio/tgtime-router-tracker/internal/service/router_tracker"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -59,7 +59,7 @@ func TestRouterOS(t *testing.T) {
 	require.NoError(t, errPortEndpoint)
 	t.Log("Endpoint:", endpoint)
 
-	tracker, err := router.NewRouterTracker()
+	tracker, err := router_tracker.NewRouterTracker()
 	if err != nil {
 		t.Fatal(err)
 	}

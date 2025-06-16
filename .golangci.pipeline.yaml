@@ -47,5 +47,4 @@ issues:
   exclude-dirs:
     - bin
     - vendor
-    - pandora
     - pprof
