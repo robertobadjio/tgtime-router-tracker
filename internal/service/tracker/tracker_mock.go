@@ -13,7 +13,6 @@ import (
 	context "context"
 	reflect "reflect"
 
-	model "github.com/robertobadjio/tgtime-router-tracker/internal/repository/model"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -130,43 +129,4 @@ func (m *Mockaggregator) CreateTime(ctx context.Context, macAddress string, seco
 func (mr *MockaggregatorMockRecorder) CreateTime(ctx, macAddress, seconds, routerID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTime", reflect.TypeOf((*Mockaggregator)(nil).CreateTime), ctx, macAddress, seconds, routerID)
-}
-
-// MockrouterRepo is a mock of routerRepo interface.
-type MockrouterRepo struct {
-	ctrl     *gomock.Controller
-	recorder *MockrouterRepoMockRecorder
-	isgomock struct{}
-}
-
-// MockrouterRepoMockRecorder is the mock recorder for MockrouterRepo.
-type MockrouterRepoMockRecorder struct {
-	mock *MockrouterRepo
-}
-
-// NewMockrouterRepo creates a new mock instance.
-func NewMockrouterRepo(ctrl *gomock.Controller) *MockrouterRepo {
-	mock := &MockrouterRepo{ctrl: ctrl}
-	mock.recorder = &MockrouterRepoMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockrouterRepo) EXPECT() *MockrouterRepoMockRecorder {
-	return m.recorder
-}
-
-// GetAllActive mocks base method.
-func (m *MockrouterRepo) GetAllActive(ctx context.Context) ([]model.Router, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllActive", ctx)
-	ret0, _ := ret[0].([]model.Router)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAllActive indicates an expected call of GetAllActive.
-func (mr *MockrouterRepoMockRecorder) GetAllActive(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllActive", reflect.TypeOf((*MockrouterRepo)(nil).GetAllActive), ctx)
 }

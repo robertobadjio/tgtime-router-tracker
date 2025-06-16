@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/robertobadjio/tgtime-router-tracker/internal/logger"
-	modelRepo "github.com/robertobadjio/tgtime-router-tracker/internal/repository/model"
 )
 
 type routerService interface {
@@ -23,16 +22,11 @@ type aggregator interface {
 	CreateTime(ctx context.Context, macAddress string, seconds, routerID int64) error
 }
 
-type routerRepo interface {
-	GetAllActive(ctx context.Context) ([]modelRepo.Router, error)
-}
-
 // Tracker ...
 type Tracker struct {
 	routerService routerService
 	kafka         kafka
 	aggregator    aggregator
-	routerRepo    routerRepo
 	interval      time.Duration
 
 	cancel context.CancelFunc
@@ -47,23 +41,19 @@ func NewTracker(
 	routerService routerService,
 	kafka kafka,
 	aggregator aggregator,
-	routerRepo routerRepo,
 	interval time.Duration,
 ) (*Tracker, error) {
 	if routerService == nil {
-		return nil, errors.New("routerService is nil")
+		return nil, errors.New("router service is nil")
 	}
 
+	// TODO: Если брокера нет -  в очередь не отправляем
 	if kafka == nil {
 		return nil, errors.New("kafka is nil")
 	}
 
 	if aggregator == nil {
 		return nil, errors.New("aggregator is nil")
-	}
-
-	if routerRepo == nil {
-		return nil, errors.New("routerRepo is nil")
 	}
 
 	if interval <= 0 {
@@ -74,7 +64,6 @@ func NewTracker(
 		routerService: routerService,
 		kafka:         kafka,
 		aggregator:    aggregator,
-		routerRepo:    routerRepo,
 		interval:      interval,
 		checks:        make(map[string]map[string]struct{}),
 	}, nil

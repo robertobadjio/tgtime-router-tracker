@@ -10,15 +10,15 @@ import (
 
 // Tracker Трекер роутера.
 type Tracker struct {
+	clients    []routerosInternal.ClientInt
 	properties string
 	sentence   string
-	clients    []routerosInternal.ClientInt
 }
 
 // NewRouterTracker Конструктор трекер роутера.
 func NewRouterTracker(sentence string, routerClient []routerosInternal.ClientInt) (*Tracker, error) {
 	properties := flag.String("properties", "mac-address", "Properties")
-	flag.Parse()
+	flag.Parse() // TODO: Убрать?
 
 	if sentence == "" {
 		return nil, fmt.Errorf("invalid sentence")
@@ -51,8 +51,7 @@ func (t Tracker) GetMacAddresses() (map[uint][]string, error) {
 			continue
 		}
 
-		macAddresses[c.ID()] = make([]string, 0)
-
+		macAddresses[c.ID()] = make([]string, 0, len(reply.Re))
 		for _, re := range reply.Re {
 			macAddresses[c.ID()] = append(macAddresses[c.ID()], re.List[0].Value)
 		}
