@@ -3,7 +3,9 @@ module github.com/robertobadjio/tgtime-router-tracker
 go 1.24.2
 
 require (
+	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/Masterminds/squirrel v1.5.4
+	github.com/docker/docker v28.0.1+incompatible
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.0
 	github.com/golang-migrate/migrate/v4 v4.18.1
@@ -30,7 +32,6 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/docker v28.0.1+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.8.2 // indirect

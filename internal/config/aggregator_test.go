@@ -10,7 +10,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestKafkaConfig_NewKafkaConfig(t *testing.T) {
+func TestAggregatorConfig_NewAggregatorConfig(t *testing.T) {
 	t.Parallel()
 
 	controller := gomock.NewController(t)
@@ -20,7 +20,7 @@ func TestKafkaConfig_NewKafkaConfig(t *testing.T) {
 
 		expectedNilObj bool
 		expectedErr    error
-		expectedConfig *KafkaConfig
+		expectedConfig *AggregatorConfig
 	}{
 		"create config without OS": {
 			os: func() OS {
@@ -35,44 +35,58 @@ func TestKafkaConfig_NewKafkaConfig(t *testing.T) {
 				osMock := NewMockOS(controller)
 				require.NotNil(t, osMock)
 
-				osMock.EXPECT().Getenv(kafkaHostEnvName).Return("").Times(1)
+				osMock.EXPECT().Getenv(aggregatorHostEnvParam).Return("").Times(1)
 
 				return osMock
 			},
 
 			expectedNilObj: true,
-			expectedErr:    fmt.Errorf("environment variable %s must be set", kafkaHostEnvName),
+			expectedErr:    fmt.Errorf("environment variable %s must be set", aggregatorHostEnvParam),
 		},
 		"create config without port": {
 			os: func() OS {
 				osMock := NewMockOS(controller)
 				require.NotNil(t, osMock)
 
-				osMock.EXPECT().Getenv(kafkaHostEnvName).Return("127.0.0.1").Times(1)
-				osMock.EXPECT().Getenv(kafkaPortEnvName).Return("").Times(1)
+				osMock.EXPECT().Getenv(aggregatorHostEnvParam).Return("127.0.0.1").Times(1)
+				osMock.EXPECT().Getenv(aggregatorPortEnvParam).Return("").Times(1)
 
 				return osMock
 			},
 
 			expectedNilObj: true,
-			expectedErr:    fmt.Errorf("environment variable %s must be set", kafkaPortEnvName),
+			expectedErr:    fmt.Errorf("environment variable %s must be set", aggregatorPortEnvParam),
+		},
+		"create config with invalid port": {
+			os: func() OS {
+				osMock := NewMockOS(controller)
+				require.NotNil(t, osMock)
+
+				osMock.EXPECT().Getenv(aggregatorHostEnvParam).Return("127.0.0.1").Times(1)
+				osMock.EXPECT().Getenv(aggregatorPortEnvParam).Return("8O82").Times(1)
+
+				return osMock
+			},
+
+			expectedNilObj: true,
+			expectedErr:    fmt.Errorf("invalid variable %s, param must be positive integer", aggregatorPortEnvParam),
 		},
 		"create config": {
 			os: func() OS {
 				osMock := NewMockOS(controller)
 				require.NotNil(t, osMock)
 
-				osMock.EXPECT().Getenv(kafkaHostEnvName).Return("127.0.0.1")
-				osMock.EXPECT().Getenv(kafkaPortEnvName).Return("9092")
+				osMock.EXPECT().Getenv(aggregatorHostEnvParam).Return("127.0.0.1")
+				osMock.EXPECT().Getenv(aggregatorPortEnvParam).Return("8082")
 
 				return osMock
 			},
 
 			expectedNilObj: false,
 			expectedErr:    nil,
-			expectedConfig: &KafkaConfig{
+			expectedConfig: &AggregatorConfig{
 				host: "127.0.0.1",
-				port: "9092",
+				port: 8082,
 			},
 		},
 	}
@@ -81,7 +95,7 @@ func TestKafkaConfig_NewKafkaConfig(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			cfg, err := NewKafkaConfig(test.os())
+			cfg, err := NewAggregatorConfig(test.os())
 			require.Equal(t, test.expectedErr, err)
 
 			if test.expectedNilObj {

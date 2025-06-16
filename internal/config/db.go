@@ -1,6 +1,10 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"time"
+)
 
 const (
 	dbHostEnvName     = "DATABASE_HOST"
@@ -11,20 +15,28 @@ const (
 	dbSSLModeEnvName  = "DATABASE_SSL_MODE"
 )
 
+const (
+	dbSSLModeDisable = "disable"
+	dbSSLModeRequire = "require"
+)
+
+const queryTimeoutDefault = time.Second
+
 // DBConfig ...
 type DBConfig struct {
-	Host     string
-	Port     string
-	User     string
-	Password string
-	Database string
-	SSLMode  string
+	host         string
+	port         int
+	user         string
+	password     string
+	database     string
+	sslMode      string
+	queryTimeout time.Duration
 }
 
 // NewDBConfig ...
 func NewDBConfig(os OS) (*DBConfig, error) {
 	if os == nil {
-		return nil, fmt.Errorf("os must not be nil")
+		return nil, fmt.Errorf("OS must not be nil")
 	}
 
 	host := os.Getenv(dbHostEnvName)
@@ -32,9 +44,14 @@ func NewDBConfig(os OS) (*DBConfig, error) {
 		return nil, fmt.Errorf("environment variable %s must be set", dbHostEnvName)
 	}
 
-	port := os.Getenv(dbPortEnvName)
-	if len(port) == 0 {
+	portRaw := os.Getenv(dbPortEnvName)
+	if len(portRaw) == 0 {
 		return nil, fmt.Errorf("environment variable %s must be set", dbPortEnvName)
+	}
+
+	port, err := strconv.Atoi(portRaw)
+	if err != nil {
+		return nil, fmt.Errorf("invalid variable %s, param must be positive integer", dbPortEnvName)
 	}
 
 	database := os.Getenv(dbNameEnvName)
@@ -54,28 +71,36 @@ func NewDBConfig(os OS) (*DBConfig, error) {
 
 	SSLMode := os.Getenv(dbSSLModeEnvName)
 	if len(SSLMode) == 0 {
-		return nil, fmt.Errorf("environment variable %s must be set", dbSSLModeEnvName)
+		SSLMode = dbSSLModeDisable
+	} else if SSLMode != dbSSLModeDisable && SSLMode != dbSSLModeRequire {
+		return nil, fmt.Errorf("invalid DB SSL mode value")
 	}
 
 	return &DBConfig{
-		Host:     host,
-		Port:     port,
-		User:     user,
-		Password: password,
-		Database: database,
-		SSLMode:  SSLMode,
+		host:         host,
+		port:         port,
+		user:         user,
+		password:     password,
+		database:     database,
+		sslMode:      SSLMode,
+		queryTimeout: queryTimeoutDefault,
 	}, nil
 }
 
 // DSN ...
 func (c *DBConfig) DSN() string {
 	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		c.User,
-		c.Password,
-		c.Host,
-		c.Port,
-		c.Database,
-		c.SSLMode,
+		"postgres://%s:%s@%s:%d/%s?sslmode=%s",
+		c.user,
+		c.password,
+		c.host,
+		c.port,
+		c.database,
+		c.sslMode,
 	)
+}
+
+// QueryTimeout ...
+func (c *DBConfig) QueryTimeout() time.Duration {
+	return c.queryTimeout
 }

@@ -11,6 +11,8 @@ const intervalEnvParam = "DELAY_SECONDS"
 
 const intervalDurationDefault = 10 * time.Second
 
+var errorIntervalLessThanZeroOrEqual = errors.New("interval must be greater than zero")
+
 // TrackerConfig ...
 type TrackerConfig struct {
 	interval time.Duration
@@ -19,7 +21,7 @@ type TrackerConfig struct {
 // NewTrackerConfig ...
 func NewTrackerConfig(os OS) (*TrackerConfig, error) {
 	if os == nil {
-		return nil, fmt.Errorf("os must not be nil")
+		return nil, fmt.Errorf("OS must not be nil")
 	}
 
 	intervalRaw := os.Getenv(intervalEnvParam)
@@ -33,7 +35,7 @@ func NewTrackerConfig(os OS) (*TrackerConfig, error) {
 	}
 
 	if intervalInt <= 0 {
-		return nil, errors.New("interval must be greater than zero")
+		return nil, errorIntervalLessThanZeroOrEqual
 	}
 
 	return &TrackerConfig{interval: time.Duration(intervalInt) * time.Second}, nil

@@ -1,49 +1,61 @@
 package router
 
 import (
-	"context"
 	"flag"
 	"fmt"
-	"time"
 
-	"gopkg.in/routeros.v2"
+	"github.com/robertobadjio/tgtime-router-tracker/internal/logger"
+	routerosInternal "github.com/robertobadjio/tgtime-router-tracker/internal/routeros"
 )
-
-const registrationTableSentence = "/interface/wireless/registration-table/print"
-const dialTimeout = 10 * time.Second
 
 // Tracker Трекер роутера.
 type Tracker struct {
 	properties string
+	sentence   string
+	clients    []routerosInternal.ClientInt
 }
 
 // NewRouterTracker Конструктор трекер роутера.
-func NewRouterTracker() (*Tracker, error) {
+func NewRouterTracker(sentence string, routerClient []routerosInternal.ClientInt) (*Tracker, error) {
 	properties := flag.String("properties", "mac-address", "Properties")
 	flag.Parse()
 
+	if sentence == "" {
+		return nil, fmt.Errorf("invalid sentence")
+	}
+
+	if len(routerClient) == 0 {
+		return nil, fmt.Errorf("invalid router clients")
+	}
+
 	return &Tracker{
 		properties: *properties,
+		sentence:   sentence,
+		clients:    routerClient,
 	}, nil
 }
 
 // GetMacAddresses Получение списка mac-адресов подключенных к роутеру.
-func (r Tracker) GetMacAddresses(_ context.Context, address, username, password string) ([]string, error) {
-	fmt.Println("Prop list", r.properties)
-	c, errDial := routeros.DialTimeout(address, username, password, dialTimeout)
-	if errDial != nil {
-		return []string{}, fmt.Errorf("dial: %w", errDial)
-	}
-	defer c.Close()
+func (t Tracker) GetMacAddresses() (map[uint][]string, error) {
+	var macAddresses map[uint][]string
 
-	reply, errRun := c.Run(registrationTableSentence, "=.proplist="+r.properties)
-	if errRun != nil {
-		return []string{}, fmt.Errorf("run: %w", errRun)
-	}
+	for _, c := range t.clients {
+		reply, errRun := c.Run(t.sentence, "=.proplist="+t.properties)
+		if errRun != nil {
+			logger.Error(
+				"component", "router service",
+				"during", "get mac addresses",
+				"router ID", c.ID(),
+				"err", errRun.Error(),
+			)
+			continue
+		}
 
-	var macAddresses []string
-	for _, re := range reply.Re {
-		macAddresses = append(macAddresses, re.List[0].Value)
+		macAddresses[c.ID()] = make([]string, 0)
+
+		for _, re := range reply.Re {
+			macAddresses[c.ID()] = append(macAddresses[c.ID()], re.List[0].Value)
+		}
 	}
 
 	return macAddresses, nil

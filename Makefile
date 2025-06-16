@@ -49,7 +49,10 @@ clean: ## Delete all containers
 	$(DOCKER_COMPOSE) down --remove-orphans
 
 mockgen: ## Run mockgen
-	mockgen -source=./config/OS.go -destination=./config/OS_mock.go -package=config
+	mockgen -source=./internal/config/os.go -destination=./internal/config/os_mock.go -package=config
+	mockgen -source=./internal/service/aggregator/aggregator.go -destination=./internal/service/aggregator/aggregator_mock.go -package=aggregator
+	mockgen -source=./internal/service/kafka/kafka.go -destination=./internal/service/kafka/kafka_mock.go -package=kafka
+	mockgen -source=./internal/service/tracker/tracker.go -destination=./internal/service/tracker/tracker_mock.go -package=tracker
 
 test-unit: ## Run unit tests
 	$(GO_TEST_COMMAND) \

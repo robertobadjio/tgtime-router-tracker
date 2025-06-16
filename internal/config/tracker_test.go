@@ -3,14 +3,16 @@ package config
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
-func TestKafkaConfig_NewKafkaConfig(t *testing.T) {
+func TestTrackerConfig_NewTrackerConfig(t *testing.T) {
 	t.Parallel()
 
 	controller := gomock.NewController(t)
@@ -20,7 +22,7 @@ func TestKafkaConfig_NewKafkaConfig(t *testing.T) {
 
 		expectedNilObj bool
 		expectedErr    error
-		expectedConfig *KafkaConfig
+		expectedConfig *TrackerConfig
 	}{
 		"create config without OS": {
 			os: func() OS {
@@ -30,49 +32,66 @@ func TestKafkaConfig_NewKafkaConfig(t *testing.T) {
 			expectedNilObj: true,
 			expectedErr:    errors.New("OS must not be nil"),
 		},
-		"create config without host": {
+		"create config with invalid interval": {
 			os: func() OS {
 				osMock := NewMockOS(controller)
 				require.NotNil(t, osMock)
 
-				osMock.EXPECT().Getenv(kafkaHostEnvName).Return("").Times(1)
+				osMock.EXPECT().Getenv(intervalEnvParam).Return("6o")
 
 				return osMock
 			},
 
 			expectedNilObj: true,
-			expectedErr:    fmt.Errorf("environment variable %s must be set", kafkaHostEnvName),
+			expectedErr: fmt.Errorf(
+				"could not parse interval from environment variable %s: %v",
+				intervalEnvParam,
+				&strconv.NumError{Func: "Atoi", Num: "6o", Err: strconv.ErrSyntax},
+			),
 		},
-		"create config without port": {
+		"create config with interval less than zero or equal": {
 			os: func() OS {
 				osMock := NewMockOS(controller)
 				require.NotNil(t, osMock)
 
-				osMock.EXPECT().Getenv(kafkaHostEnvName).Return("127.0.0.1").Times(1)
-				osMock.EXPECT().Getenv(kafkaPortEnvName).Return("").Times(1)
+				osMock.EXPECT().Getenv(intervalEnvParam).Return("-1")
 
 				return osMock
 			},
 
 			expectedNilObj: true,
-			expectedErr:    fmt.Errorf("environment variable %s must be set", kafkaPortEnvName),
+			expectedErr:    errorIntervalLessThanZeroOrEqual,
 		},
-		"create config": {
+		"create config without interval": {
 			os: func() OS {
 				osMock := NewMockOS(controller)
 				require.NotNil(t, osMock)
 
-				osMock.EXPECT().Getenv(kafkaHostEnvName).Return("127.0.0.1")
-				osMock.EXPECT().Getenv(kafkaPortEnvName).Return("9092")
+				osMock.EXPECT().Getenv(intervalEnvParam).Return("")
 
 				return osMock
 			},
 
 			expectedNilObj: false,
 			expectedErr:    nil,
-			expectedConfig: &KafkaConfig{
-				host: "127.0.0.1",
-				port: "9092",
+			expectedConfig: &TrackerConfig{
+				interval: intervalDurationDefault,
+			},
+		},
+		"create config": {
+			os: func() OS {
+				osMock := NewMockOS(controller)
+				require.NotNil(t, osMock)
+
+				osMock.EXPECT().Getenv(intervalEnvParam).Return("60")
+
+				return osMock
+			},
+
+			expectedNilObj: false,
+			expectedErr:    nil,
+			expectedConfig: &TrackerConfig{
+				interval: 60 * time.Second,
 			},
 		},
 	}
@@ -81,7 +100,7 @@ func TestKafkaConfig_NewKafkaConfig(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			cfg, err := NewKafkaConfig(test.os())
+			cfg, err := NewTrackerConfig(test.os())
 			require.Equal(t, test.expectedErr, err)
 
 			if test.expectedNilObj {

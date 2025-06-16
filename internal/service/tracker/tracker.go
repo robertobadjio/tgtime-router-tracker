@@ -12,11 +12,11 @@ import (
 )
 
 type routerService interface {
-	GetMacAddresses(ctx context.Context, address, username, password string) ([]string, error)
+	GetMacAddresses() (map[uint][]string, error)
 }
 
 type kafka interface {
-	ProduceInOffice(ctx context.Context, macAddress string) error
+	ProduceInOffice(macAddress string) error
 }
 
 type aggregator interface {
@@ -116,41 +116,35 @@ func (t *Tracker) Run(ctx context.Context) error {
 }
 
 // Shutdown ...
-func (t *Tracker) Shutdown() {
+func (t *Tracker) Shutdown() error {
+	if t.cancel == nil {
+		return fmt.Errorf("tracker not running")
+	}
+
 	t.cancel()
+
+	return nil
 }
 
 func (t *Tracker) process(ctx context.Context) error {
 	// TODO: Нужна распределенная блокировка (через Redis) на случай, если роутеров будет n штук и n-инстансев текущего приложения
 	// Чтобы один экземпляр приложения обрабатывал один роутер
 
-	routers, errGetAllActive := t.routerRepo.GetAllActive(ctx)
-	if errGetAllActive != nil {
-		return fmt.Errorf("error getting active routers: %w", errGetAllActive)
-	}
-
 	currentDate := time.Now()
 
-	for _, router := range routers {
-		macAddresses, errGetMacAddresses := t.routerService.GetMacAddresses(
-			ctx,
-			router.Address,
-			router.Login,
-			router.Password,
+	routerMacAddresses, errGetMacAddresses := t.routerService.GetMacAddresses()
+	if errGetMacAddresses != nil {
+		logger.Error(
+			"component", "tracker",
+			"during", "get mac addresses",
+			"err", errGetMacAddresses.Error(),
 		)
-		if errGetMacAddresses != nil {
-			logger.Error(
-				"component", "tracker",
-				"during", "get mac addresses",
-				"router_id", router.ID,
-				"err", errGetMacAddresses.Error(),
-			)
-			continue
-		}
+	}
 
+	for routerID, macAddresses := range routerMacAddresses {
 		for _, macAddress := range macAddresses {
 			// TODO: Batcher
-			errCreateTime := t.aggregator.CreateTime(ctx, macAddress, currentDate.Unix(), int64(router.ID)) // nolint : G115: integer overflow conversion uint -> int64 (gosec)
+			errCreateTime := t.aggregator.CreateTime(ctx, macAddress, currentDate.Unix(), int64(routerID)) // nolint : G115: integer overflow conversion uint -> int64 (gosec)
 			if errCreateTime != nil {
 				logger.Error(
 					"component", "tracker",
@@ -160,7 +154,7 @@ func (t *Tracker) process(ctx context.Context) error {
 			}
 
 			if !t.setCheck(currentDate, macAddress) {
-				errProduceInOffice := t.kafka.ProduceInOffice(ctx, macAddress)
+				errProduceInOffice := t.kafka.ProduceInOffice(macAddress)
 				if errProduceInOffice != nil {
 					logger.Error(
 						"component", "kafka",

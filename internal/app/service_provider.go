@@ -2,8 +2,18 @@ package app
 
 import (
 	"context"
+	"github.com/robertobadjio/platform-common/pkg/closer"
+	pb "github.com/robertobadjio/tgtime-aggregator/pkg/api/time_v1"
+	routerosInternal "github.com/robertobadjio/tgtime-router-tracker/internal/routeros"
+	kafkaLib "github.com/segmentio/kafka-go"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"log"
+	"time"
+
 	"github.com/robertobadjio/platform-common/pkg/db"
 	"github.com/robertobadjio/platform-common/pkg/db/pg"
+
 	"github.com/robertobadjio/tgtime-router-tracker/internal/config"
 	"github.com/robertobadjio/tgtime-router-tracker/internal/logger"
 	routerRepo "github.com/robertobadjio/tgtime-router-tracker/internal/repository/router"
@@ -11,8 +21,6 @@ import (
 	"github.com/robertobadjio/tgtime-router-tracker/internal/service/kafka"
 	"github.com/robertobadjio/tgtime-router-tracker/internal/service/router"
 	"github.com/robertobadjio/tgtime-router-tracker/internal/service/tracker"
-	"log"
-	"time"
 )
 
 type serviceProvider struct {
@@ -37,16 +45,66 @@ func (sp *serviceProvider) OS() config.OS {
 // Tracker ...
 func (sp *serviceProvider) Tracker(ctx context.Context) *tracker.Tracker {
 	if sp.tracker == nil {
-		cfgTracker, errNewTrackerConfig := config.NewTrackerConfig(sp.OS())
-		if errNewTrackerConfig != nil {
+		dbConfig, errNewDBConfig := config.NewDBConfig(sp.OS())
+		if errNewDBConfig != nil {
 			logger.Fatal(
 				"component", "di",
-				"during", "init tracker config",
-				"err", errNewTrackerConfig.Error(),
+				"during", "init db config",
+				"err", errNewDBConfig.Error(),
 			)
 		}
 
-		routerService, errNewRouterTracker := router.NewRouterTracker()
+		dbClient := DBClient(ctx, dbConfig.DSN(), dbConfig.QueryTimeout())
+		PGRouterRepo := routerRepo.NewPgRepository(dbClient)
+
+		routers, errGetAllActive := PGRouterRepo.GetAllActive(ctx)
+		if errGetAllActive != nil {
+			logger.Fatal(
+				"component", "di",
+				"during", "get active routers",
+				"err", errGetAllActive.Error(),
+			)
+		}
+
+		routerTrackerConfig, errNewRouterTrackerConfig := config.NewRouterTrackerConfig(sp.OS())
+		if errNewRouterTrackerConfig != nil {
+			logger.Fatal(
+				"component", "di",
+				"during", "init router tracker config",
+				"err", errNewRouterTrackerConfig.Error(),
+			)
+		}
+
+		routerOSClients := make([]routerosInternal.ClientInt, 0, len(routers))
+		for _, r := range routers {
+			routerOSClient, errRouterOSNewClient := routerosInternal.NewClient(
+				r.Address,
+				r.Login,
+				r.Password,
+				r.ID,
+				routerTrackerConfig.DialTimeout(),
+			)
+			if errRouterOSNewClient != nil {
+				logger.Error(
+					"component", "di",
+					"during", "create router OS client",
+					"err", errRouterOSNewClient.Error(),
+				)
+				continue
+			}
+
+			closer.Add(func() error {
+				routerOSClient.Close()
+				return nil
+			})
+
+			routerOSClients = append(routerOSClients, routerOSClient)
+		}
+
+		routerService, errNewRouterTracker := router.NewRouterTracker(
+			routerTrackerConfig.RegistrationTableSentence(),
+			routerOSClients,
+		)
 		if errNewRouterTracker != nil {
 			logger.Fatal(
 				"component", "di",
@@ -63,7 +121,34 @@ func (sp *serviceProvider) Tracker(ctx context.Context) *tracker.Tracker {
 				"err", errNewKafkaConfig.Error(),
 			)
 		}
-		kf, errKafka := kafka.NewKafka(kafkaConfig.Address())
+
+		conn, errDialLeader := kafkaLib.DialLeader(
+			ctx,
+			"tcp",
+			kafkaConfig.Address(),
+			kafkaConfig.Topic(),
+			kafkaConfig.Partition(),
+		)
+		if errDialLeader != nil {
+			logger.Fatal(
+				"component", "di",
+				"during", "dial leader kafka",
+				"err", errDialLeader.Error(),
+			)
+		}
+
+		closer.Add(func() error { return conn.Close() })
+
+		errSetWriteDeadline := conn.SetWriteDeadline(time.Now().Add(kafkaConfig.ConnDeadline()))
+		if errSetWriteDeadline != nil {
+			logger.Fatal(
+				"component", "di",
+				"during", "kafka set deadline",
+				"err", errSetWriteDeadline.Error(),
+			)
+		}
+
+		kf, errKafka := kafka.NewKafka(conn)
 		if errKafka != nil {
 			logger.Fatal(
 				"component", "di",
@@ -80,24 +165,42 @@ func (sp *serviceProvider) Tracker(ctx context.Context) *tracker.Tracker {
 				"err", errNewAggregatorConfig.Error(),
 			)
 		}
-		t := aggregator.NewAggregatorClient(timeConfig.Address())
-
-		dbConfig, errNewDBConfig := config.NewDBConfig(sp.OS())
-		if errNewDBConfig != nil {
+		client, errNewClient := grpc.NewClient(
+			timeConfig.Address(),
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
+		if errNewClient != nil {
 			logger.Fatal(
 				"component", "di",
-				"during", "init db config",
-				"err", errNewDBConfig.Error(),
+				"during", "init time aggregator client",
+				"err", errNewClient.Error(),
+			)
+		}
+		closer.Add(func() error { return client.Close() })
+
+		timeAggregatorClient := pb.NewTimeV1Client(client)
+		ta, errNewTimeAggregator := aggregator.NewTimeAggregator(timeAggregatorClient)
+		if errNewTimeAggregator != nil {
+			logger.Fatal(
+				"component", "di",
+				"during", "init time aggregator service",
+				"err", errNewTimeAggregator.Error(),
 			)
 		}
 
-		dbClient := DBClient(ctx, dbConfig.DSN())
-		PGRouterRepo := routerRepo.NewPgRepository(dbClient)
+		cfgTracker, errNewTrackerConfig := config.NewTrackerConfig(sp.OS())
+		if errNewTrackerConfig != nil {
+			logger.Fatal(
+				"component", "di",
+				"during", "init tracker config",
+				"err", errNewTrackerConfig.Error(),
+			)
+		}
 
 		trackerService, errNewTracker := tracker.NewTracker(
 			routerService,
 			kf,
-			t,
+			ta,
 			PGRouterRepo,
 			cfgTracker.Interval(),
 		)
@@ -115,12 +218,9 @@ func (sp *serviceProvider) Tracker(ctx context.Context) *tracker.Tracker {
 	return sp.tracker
 }
 
-func DBClient(ctx context.Context, connSrt string) db.Client {
-	cl, err := pg.New(
-		ctx,
-		connSrt,
-		1*time.Second,
-	)
+// DBClient ...
+func DBClient(ctx context.Context, connSrt string, queryTimeout time.Duration) db.Client {
+	cl, err := pg.New(ctx, connSrt, queryTimeout)
 	if err != nil {
 		log.Fatalf("failed to create db client: %v", err)
 	}

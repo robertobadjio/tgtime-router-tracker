@@ -63,16 +63,25 @@ func (a *App) initTracker(ctx context.Context) error {
 	a.gGroup.Add(func() error {
 		logger.Info(
 			"component", "app",
-			"type", "tracker",
 			"during", "run",
+			"type", "tracker",
 		)
 		return tracker.Run(ctx)
 	}, func(err error) {
-		tracker.Shutdown()
+		errShutdown := tracker.Shutdown()
+		if errShutdown != nil {
+			logger.Error(
+				"component", "app",
+				"during", "shutdown",
+				"type", "tracker",
+				"err", err.Error(),
+			)
+		}
+
 		logger.Info(
 			"component", "app",
-			"type", "tracker",
 			"during", "shutdown",
+			"type", "tracker",
 			"err", err.Error(),
 		)
 	})

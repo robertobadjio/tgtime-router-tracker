@@ -5,7 +5,6 @@ services:
     build:
       context: .
       dockerfile: ./docker/app/Dockerfile
-    #container_name: tgtime-router-tracker
     networks:
       - tgtime-router-tracker-network
     depends_on:
@@ -14,30 +13,31 @@ services:
       kafka:
         condition: service_healthy
   routeros:
-    image: mkv28/mikrotik-routeros:latest
-    privileged: true
+    #image: mkv28/mikrotik-routeros:latest
+    image: evilfreelancer/docker-routeros:7.17
+    #privileged: true
     cap_add:
       - NET_ADMIN
     devices:
       - /dev/net/tun
-      #- /dev/kvm
+      - /dev/kvm
     ports:
-      - "2222:22"
+      - "2222:22" # SSH
       - "2223:23"
       - "7777:80"
-      - "8728:8728"
-      - "8729:8729"
+      - "8728:8728" # RouterOS API
+      - "8729:8729" # RouterOS API-SSL
       - "28728:8728"
       - "28729:8729"
       - "8291:8291"
-      - "5900:5900"
+      - "5900:5900" # VNC
   db:
     image: postgres:16.2
     ports:
       - "${DATABASE_PORT:-5432}:5432"
     volumes:
       - tgtime-router-tracker-data:/var/lib/postgresql/data
-      - ./docker/db/docker-entrypoint-initdb.d/init.sql:/docker-entrypoint-initdb.d/init.sql
+      #- ./docker/db/docker-entrypoint-initdb.d/init.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
       POSTGRES_DB: ${DATABASE_NAME}
       POSTGRES_USER: ${DATABASE_USER}
@@ -67,7 +67,6 @@ services:
       - tgtime-router-tracker-network
   kafka:
     image: confluentinc/cp-kafka:7.9.0
-    #container_name: kafka
     depends_on:
       - zookeeper
     environment:

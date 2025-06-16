@@ -17,19 +17,16 @@ import (
 	"time"
 )
 
+const imageName = "confluentinc/confluent-local:7.5.0"
+
 func TestProduceInOffice(t *testing.T) {
 	ctx := context.Background()
 	kafkaContainer, err := kafka.Run(
 		ctx,
-		"confluentinc/confluent-local:7.5.0",
+		imageName,
 		kafka.WithClusterID("test-cluster"),
 	)
 	require.NoError(t, err)
-	defer func() {
-		errTerminateKafka := testcontainers.TerminateContainer(kafkaContainer)
-		require.NoError(t, errTerminateKafka)
-	}()
-
 	defer func() {
 		errTerminateKafka := testcontainers.TerminateContainer(kafkaContainer)
 		require.NoError(t, errTerminateKafka)
@@ -47,10 +44,35 @@ func TestProduceInOffice(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	kafkaClient, errNewKafka := kafkaInternal.NewKafka(kafkaBrokers[0])
+	conn, errDialLeader := kafkaLib.DialLeader(
+		ctx,
+		"tcp",
+		kafkaBrokers[0],
+		"test-topic",
+		0,
+	)
+	if errDialLeader != nil {
+		logger.Fatal(
+			"component", "di",
+			"during", "dial leader kafka",
+			"err", errDialLeader.Error(),
+		)
+	}
+	defer func() { _ = conn.Close() }()
+
+	errSetWriteDeadline := conn.SetWriteDeadline(time.Now().Add(time.Second))
+	if errSetWriteDeadline != nil {
+		logger.Fatal(
+			"component", "di",
+			"during", "kafka set deadline",
+			"err", errSetWriteDeadline.Error(),
+		)
+	}
+
+	kafkaClient, errNewKafka := kafkaInternal.NewKafka(conn)
 	require.NoError(t, errNewKafka)
 
-	errProduceInOffice := kafkaClient.ProduceInOffice(ctx, "00:1A:2B:3C:4D:5E")
+	errProduceInOffice := kafkaClient.ProduceInOffice("00:1A:2B:3C:4D:5E")
 	require.NoError(t, errProduceInOffice)
 
 	gotMacAddress, errConsumeInOffice := ConsumeInOffice(ctx, kafkaBrokers)
